@@ -1,0 +1,3 @@
+[submodule "notebooks/research/deps/llama-finetuning"]
+	path = notebooks/research/deps/llama-finetuning
+	url = https://github.com/modal-labs/llama-finetuning
