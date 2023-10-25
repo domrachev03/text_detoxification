@@ -1,3 +1,5 @@
 **/*.tsv
 **/*.zip
 **/__pycache__
+**/.vscode
+data
