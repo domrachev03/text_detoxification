@@ -2,7 +2,6 @@ import os
 import datasets
 import pandas as pd
 from collections.abc import Iterable
-from llama_recipes.datasets.utils import Concatenator
 
 
 class ParaNMTDataset:
@@ -11,30 +10,36 @@ class ParaNMTDataset:
         tokenizer=None,
         max_tokens=256,
         prefix="You are a Twitch moderator. Make this text non-toxic: \n",
-        download_dataset: bool = False,
-        map_dataset: bool = False,
-        save_splitted: bool = False,
+        lazy_init: bool = False,
+        download_dataset: bool = True,
+        load_and_preprocess: bool = True,
+        split_and_map_dataset: bool = False,
+        split_dataset: bool = True,
+        save_splitted: bool = True,
         dataset_sv_fname: str = 'data/raw/filtered.tsv'
     ):
         self._tokenizer = tokenizer
         self._prefix = prefix
         self._max_tokens = max_tokens
-
+        
+        if lazy_init:
+            return
+        
         if download_dataset:
             dataset_dir = os.path.dirname(dataset_sv_fname)
             self._download_dataset(dataset_dir)
-        
-        self.load_from_sv(dataset_sv_fname)
-        self.preprocess_dataset_sv()
-        if map_dataset:
-            self.preprocess_dataset()
-        else:
+        if load_and_preprocess:
+            self.load_from_sv(dataset_sv_fname)
+            self.preprocess_dataset_sv()
+        if split_and_map_dataset:
+            self.preprocess_dataset(save_arrow=save_splitted)
+        elif split_dataset:
             self.split_dataset(save_arrow=save_splitted)
 
     def set_tokenizer(self, tokenizer) -> None:
         self._tokenizer = tokenizer
 
-    @property
+    @property   
     def dataset(self):
         return self._dataset
 
@@ -92,6 +97,7 @@ class ParaNMTDataset:
     def split_dataset(
             self,
             df: pd.DataFrame = None,
+            load_whole_ds = False,
             n_samples: Iterable[int] = (5000, 500),
             test_size=0.1,
             batch_size=256,
@@ -107,8 +113,9 @@ class ParaNMTDataset:
             seed=42,
         )
         batch_size = batch_size
-        split_dict['train'] = split_dict['train'].select(range(n_samples[0]))
-        split_dict['test'] = split_dict['test'].select(range(n_samples[1]))
+        if not load_whole_ds:
+            split_dict['train'] = split_dict['train'].select(range(n_samples[0]))
+            split_dict['test'] = split_dict['test'].select(range(n_samples[1]))
         if save_arrow:
             split_dict.push_to_hub('domrachev03/toxic_comments_subset')
             split_dict["train"].save_to_disk(fdir + '/train_unmapped')
