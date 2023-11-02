@@ -97,7 +97,7 @@ class ParaNMTDataset:
     def split_dataset(
             self,
             df: pd.DataFrame = None,
-            load_whole_ds = False,
+            load_whole_ds=True,
             n_samples: Iterable[int] = (5000, 500),
             test_size=0.1,
             batch_size=256,
@@ -126,13 +126,22 @@ class ParaNMTDataset:
     def preprocess_dataset(
             self,
             df: pd.DataFrame = None,
+            load_whole_ds=True,
             n_samples: Iterable[int] = (5000, 500),
             test_size=0.1,
             batch_size=256,
             save_arrow=False,
             fdir='data/interim'
     ) -> datasets.Dataset:
-        split_dict = self.split_dataset(df, n_samples, test_size, batch_size, False, fdir)
+        split_dict = self.split_dataset(
+            df,
+            load_whole_ds=load_whole_ds,
+            n_samples=n_samples,
+            test_size=test_size,
+            batch_size=batch_size,
+            save_arrow=save_arrow,
+            fdir=fdir
+        )
 
         tokenized_datasets = split_dict.map(
             self._map_fn,
@@ -152,5 +161,5 @@ if __name__ == '__main__':
     ds = ParaNMTDataset(
         tokenizer=None,
         download_dataset=False,
-        save_splitted=True
+        save_splitted=True   
     )
