@@ -2,5 +2,7 @@
 **/*.zip
 **/__pycache__
 **/.vscode
-data
-models/
+
+data/
+models
+!src/models
