@@ -4,26 +4,30 @@ from tqdm.auto import trange
 import torch
 import numpy as np
 
-from transformers import AutoModelForSequenceClassification, AutoTokenizer, \
-    RobertaTokenizer, RobertaForSequenceClassification
+from transformers import AutoTokenizer, RobertaTokenizer, RobertaForSequenceClassification
 
 import evaluate
 
 
 def cleanup():
+    '''Clean the RAM and VRAM from the trash'''
+
     gc.collect()
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
 
 
-def get_toxicity(preds, soft=False, batch_size=1, device='cuda'):
+def get_toxicity(preds, batch_size=1, device=None):
+    '''Calculates toxicity of the corpus using RoBerta finetuned on toxicity classification.'''
+
     results = []
 
     model_name = 'SkolkovoInstitute/roberta_toxicity_classifier'
 
     tokenizer = RobertaTokenizer.from_pretrained(model_name)
     model = RobertaForSequenceClassification.from_pretrained(model_name)
-    device = device
+    if device is None:
+        device = 'cuda' if torch.cuda.is_available() else device
     model.to(device)
 
     model.eval()
@@ -38,17 +42,23 @@ def get_toxicity(preds, soft=False, batch_size=1, device='cuda'):
 
 
 def get_sacrebleu(inputs, preds):
+    '''Calculates sacrebleu score for the inputs and predictions'''
+
     metric = evaluate.load("sacrebleu")
 
     result = metric.compute(predictions=preds, references=inputs)
     return result['score']
 
 
-def get_fluency(preds, soft=False, batch_size=1, device='cuda'):
-    path = 'cointegrated/roberta-large-cola-krishna2020'
+def get_fluency(preds, soft=False, batch_size=1, device=None):
+    '''Calculates fluency of the corpus using RoBerta finetuned on CoLa dataset.'''
 
-    model = RobertaForSequenceClassification.from_pretrained(path)
-    tokenizer = AutoTokenizer.from_pretrained(path)
+    model_name = 'cointegrated/roberta-large-cola-krishna2020'
+
+    model = RobertaForSequenceClassification.from_pretrained(model_name)
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    if device is None:
+        device = 'cuda' if torch.cuda.is_available() else device
     device = device
     model.to(device)
 
@@ -63,8 +73,15 @@ def get_fluency(preds, soft=False, batch_size=1, device='cuda'):
 
 
 def compute_metrics(eval_preds, tokenizer=None, print_results=False, batch_size=1, device='cuda', model_name=""):
+    ''' Computing metrics for the given data
+
+    Parameters:
+    eval_preds=(preds, labels) -- tuple with predictions and labels
+    tokenzier -- the tokenizer for the sequence. Default: None, and sequence is treated as decoded one
+    model_name -- optional model name for fancy output printing. Defaul: empty'''
+
     preds, labels = eval_preds
-    
+
     if tokenizer is not None:
         detokenized_preds = tokenizer.batch_decode(preds, skip_special_tokens=True)
         filtered_labels = np.where(labels != -100, labels, tokenizer.pad_token_id)
@@ -101,10 +118,3 @@ def compute_metrics(eval_preds, tokenizer=None, print_results=False, batch_size=
         print(f"Total    | {results['joint']:.2f}")
         print("--------------")
     return results
-
-
-if __name__ == "__main__":
-    preds = ["Go away!", "Fuck you bitch sosi!", "fuck you!"]
-    labels = [["Fuck!"], ["Fuck!"], ["Fuck!"]]
-
-    compute_metrics((preds, labels), print_results=True)

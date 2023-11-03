@@ -9,6 +9,11 @@ from src.models.llama.common import stub, N_GPUS, GPU_MEM, BASE_MODELS, VOLUME_C
     timeout=3600 * 4,
 )
 def download(model_name: str):
+    ''' Downloads the model from huggingface
+
+    Parameters:
+    model_name (str): name of the loaded model on the huggingface.co '''
+
     from huggingface_hub import snapshot_download
     from transformers.utils import move_cache
 
@@ -24,7 +29,9 @@ def download(model_name: str):
         stub.pretrained_volume.commit()
 
 
-def library_entrypoint(config):
+def library_entrypoint(config: dict):
+    ''' Entry to the llama finetuner '''
+
     from llama_recipes.finetuning import main
 
     main(**config)
@@ -38,7 +45,9 @@ def library_entrypoint(config):
     gpu=gpu.A100(count=N_GPUS, memory=GPU_MEM),
     timeout=3600 * 12,
 )
-def train(train_kwargs):
+def train(train_kwargs: dict):
+    ''' Handling the call of llama finetuner '''
+
     from torch.distributed.run import elastic_launch, parse_args, config_from_args
 
     torch_args = parse_args(["--nnodes", "1", "--nproc_per_node", str(N_GPUS), ""])
@@ -61,7 +70,7 @@ def main(
     num_epochs: int = 9,
     batch_size: int = 16,
 ):
-    print(f"Welcome to Modal Llama fine-tuning.")
+    print("Welcome to Modal Llama fine-tuning.")
 
     model_name = BASE_MODELS[base]
     print(f"Syncing base model {model_name} to volume.")
@@ -88,13 +97,13 @@ def main(
             "custom_dataset.file": dataset,
             # --- FSDP options ---
             "enable_fsdp": True,
-            "low_cpu_fsdp": True,  # Optimization for FSDP model loading (RAM won't scale with num GPUs)
-            "fsdp_config.use_fast_kernels": True,  # Only works when FSDP is on
+            "low_cpu_fsdp": True,                  # Optimization for FSDP model loading (RAM won't scale with num GPUs)
+            "fsdp_config.use_fast_kernels": True,               # Only works when FSDP is on
             "fsdp_config.fsdp_activation_checkpointing": True,  # Activation checkpointing for fsdp
             "pure_bf16": True,
             # --- Required for 70B ---
             "fsdp_config.fsdp_cpu_offload": True,
-            "fsdp_peft_cpu_offload_for_save": True,  # Experimental
+            "fsdp_peft_cpu_offload_for_save": True,            # Experimental
             # --- PEFT options ---
             "use_peft": True,
             "peft_method": "lora",

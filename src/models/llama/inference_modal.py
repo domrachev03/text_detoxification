@@ -5,6 +5,7 @@ import os
 
 from src.models.llama.common import stub, BASE_MODELS, VOLUME_CONFIG
 
+# The huggingface image to run seq2seq inference
 tgi_image = (
     Image.from_registry("ghcr.io/huggingface/text-generation-inference:1.0.3")
     .dockerfile_commands("ENTRYPOINT []")
@@ -15,6 +16,12 @@ tgi_image = (
 
 @stub.function(image=tgi_image, volumes=VOLUME_CONFIG, timeout=60 * 20)
 def merge(run_id: str, commit: bool = False):
+    ''' Merges new and old weigts in the volume and if the volume is permanent, commits is
+
+    Parameters:
+    run_id (str): the id of the run
+    commit (bool): if True, then ocmmits the changes to permanent volume
+    '''
     from text_generation_server.utils.peft import download_and_unload_peft
 
     os.mkdir(f"/results/{run_id}/merged")
@@ -35,6 +42,10 @@ def merge(run_id: str, commit: bool = False):
     volumes=VOLUME_CONFIG,
 )
 class Model:
+    '''Class model.
+
+    Launches the model for inference and handles output generation'''
+
     def __init__(self, base: str = "", run_id: str = ""):
         from text_generation import AsyncClient
         import socket
@@ -45,10 +56,12 @@ class Model:
         if run_id and not os.path.isdir(model):
             merge.local(run_id)  # local = run in the same container
 
+        # Launching container with model
         print(f"Loading {model} into GPU ... ")
         launch_cmd = ["text-generation-launcher", "--model-id", model, "--port", "8000"]
         self.launcher = subprocess.Popen(launch_cmd, stdout=subprocess.DEVNULL)
 
+        # Setup the client
         self.client = None
         while not self.client and self.launcher.returncode is None:
             try:
@@ -63,7 +76,7 @@ class Model:
         self.launcher.terminate()
 
     @method()
-    async def generate(self, prompt: str):
+    async def generate(self, prompt: str) -> str:
         result = await self.client.generate(prompt, max_new_tokens=512)
 
         return result.generated_text
@@ -73,11 +86,6 @@ class Model:
 def main(prompt: str, base: str, run_id: str = "", batch: int = 1):
     print(f"Running completion for prompt:\n{prompt}")
 
-    print("=" * 20 + "Generating without adapter" + "=" * 20)
-    for output in Model(base).generate.map([prompt] * batch):
+    print("=" * 20 + "Generating results" + "=" * 20)
+    for output in Model(base, run_id).generate.map([prompt] * batch):
         print(output)
-
-    if run_id:
-        print("=" * 20 + "Generating with adapter" + "=" * 20)
-        for output in Model(base, run_id).generate.map([prompt] * batch):
-            print(output)

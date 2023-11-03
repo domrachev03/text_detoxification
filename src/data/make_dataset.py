@@ -1,15 +1,21 @@
 import os
 import datasets
 import pandas as pd
+import argparse
 from collections.abc import Iterable
 
 
-class ParaNMTDataset:
+class DetoxDataset:
+    '''Class DetoxDataset.
+
+    Serves as a convinient proxy for loading, preprocessing and saving the dataset locally and to the cloud.
+    Suggested use: only once, at the beginning, to initialize dataset.'''
+
     def __init__(
         self,
-        tokenizer=None,
+        tokenizer=None,                         
         max_tokens=256,
-        prefix="You are a Twitch moderator. Make this text non-toxic: \n",
+        wrapper=lambda x: x,
         lazy_init: bool = False,
         download_dataset: bool = True,
         load_and_preprocess: bool = True,
@@ -18,13 +24,15 @@ class ParaNMTDataset:
         save_splitted: bool = True,
         dataset_sv_fname: str = 'data/raw/filtered.tsv'
     ):
+        '''Default behaviour at construction: download, preprocess and save the dataset locally, without tokenization'''
+
         self._tokenizer = tokenizer
-        self._prefix = prefix
+        self._wrapper = wrapper
         self._max_tokens = max_tokens
-        
+
         if lazy_init:
             return
-        
+
         if download_dataset:
             dataset_dir = os.path.dirname(dataset_sv_fname)
             self._download_dataset(dataset_dir)
@@ -39,17 +47,21 @@ class ParaNMTDataset:
     def set_tokenizer(self, tokenizer) -> None:
         self._tokenizer = tokenizer
 
-    @property   
+    @property
     def dataset(self):
         return self._dataset
 
     def _download_dataset(self, dir: str, zip_name: str = 'filtered_paranmt') -> None:
+        ''' Downloading and unzipping dataset from the Internet.
+            Requires unzip package installed on Linux system '''
+
         os.system('wget https://github.com/skoltech-nlp/detox/releases/download/emnlp2021/{zip_name}')
         os.system(f'unzip {zip_name} -d {dir}')
         os.system(f'rm {zip_name}')
 
     def load_from_sv(self, file: str = "data/raw/filtered.tsv") -> datasets.Dataset:
-        # Load the WMT16 dataset
+        '''Loadinf the dataset from the tsv file and putting it into the datasets.Dataset'''
+
         assert file.split('.')[-1] == 'tsv'
 
         self._df = pd.read_csv(file, sep='\t', index_col=0)
@@ -58,6 +70,8 @@ class ParaNMTDataset:
         return self._dataset
 
     def preprocess_dataset_sv(self, df: pd.DataFrame = None) -> pd.DataFrame:
+        '''Preprocessing of the dataset in the tsv format'''
+
         if df is None:
             new_df = self._df.copy()
         else:
@@ -71,10 +85,12 @@ class ParaNMTDataset:
 
         return new_df
 
-    def _map_fn(self, examples: datasets.Dataset):
+    def _map_fn(self, examples: datasets.Dataset) -> dataset.Datasets:
+        ''' Mapping function, used to tokenize the dataset '''
+
         if self._tokenizer is None:
             raise RuntimeError("Tokenizer is undefined")
-        inputs = [self._prefix + ref for ref in examples["reference"]]
+        inputs = [self._wrapper(ref) for ref in examples["reference"]]
         targets = [tsn for tsn in examples["translation"]]
         model_inputs = self._tokenizer(
             inputs,
@@ -99,11 +115,20 @@ class ParaNMTDataset:
             df: pd.DataFrame = None,
             load_whole_ds=True,
             n_samples: Iterable[int] = (5000, 500),
-            test_size=0.1,
-            batch_size=256,
-            save_arrow=False,
-            fdir='data/interim'
+            test_size: float = 0.1,
+            batch_size: float = 256,
+            save_arrow: bool = False,
+            fdir: str = 'data/interim'
     ) -> datasets.Dataset:
+        '''Splitting the dataset onto train and test parts.
+
+        Parameters:
+        load_whole_ds (bool): if False, utilized proportions from the n_samples to cut the datasets
+
+        test_size (float): the fraction of the data utilized as test dataset, ranges [0; 1]
+
+        save_arrow (bool): if True, then the dataset would be saved to the file
+        '''
 
         if df is not None:
             self._dataset = datasets.Dataset.from_pandas(df).remove_columns('__index_level_0__')
@@ -133,6 +158,9 @@ class ParaNMTDataset:
             save_arrow=False,
             fdir='data/interim'
     ) -> datasets.Dataset:
+        ''' Preprocessing the data, i.e. tokenizing and splitting.
+
+        Parameters: see split_dataset() '''
         split_dict = self.split_dataset(
             df,
             load_whole_ds=load_whole_ds,
@@ -150,16 +178,23 @@ class ParaNMTDataset:
             remove_columns=split_dict["train"].column_names
         )
         self._dataset = tokenized_datasets
-        if save_arrow:
-            tokenized_datasets["train"].save_to_disk(fdir + '/train')
-            tokenized_datasets["test"].save_to_disk(fdir + '/test')
 
         return tokenized_datasets
 
 
 if __name__ == '__main__':
-    ds = ParaNMTDataset(
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-p', "--push", help="if true, pushes the dataset to huggingface.co. Default: false", type=bool, default=False)
+    parser.add_argument('-d', "--download", help="if true, downloads the zip archive with raw data. Default: false", type=bool, default=False)
+
+    args = parser.parse_args()
+
+    # Creates a copy of the dataset and saves it locally.
+    ds = DetoxDataset(
         tokenizer=None,
-        download_dataset=False,
-        save_splitted=True   
+        download_dataset=args.download,
+        save_splitted=True
     )
+
+    if args.push:
+        ds.push_to_hub('domrachev03/toxic_comments_subset')
