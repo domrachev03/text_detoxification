@@ -62,7 +62,7 @@ def get_fluency(preds, soft=False, batch_size=1, device='cuda'):
     return np.concatenate(results)
 
 
-def compute_metrics(eval_preds, tokenizer=None, print_results=False, batch_size=1, device='cuda'):
+def compute_metrics(eval_preds, tokenizer=None, print_results=False, batch_size=1, device='cuda', model_name=""):
     preds, labels = eval_preds
     
     if tokenizer is not None:
@@ -88,6 +88,9 @@ def compute_metrics(eval_preds, tokenizer=None, print_results=False, batch_size=
     # count metrics
     results['joint'] = sum(results['toxic'] * results['bleu'] * results['fluency']) / len(preds)
     if print_results:
+        if model_name != "":
+            print("--------------")
+            print(model_name)
         print("--------------")
         print("Metric   | Value")
         print("--------------")

@@ -3,7 +3,7 @@ from modal import Image, gpu, method
 import subprocess
 import os
 
-from common import stub, BASE_MODELS, VOLUME_CONFIG
+from src.models.llama.common import stub, BASE_MODELS, VOLUME_CONFIG
 
 tgi_image = (
     Image.from_registry("ghcr.io/huggingface/text-generation-inference:1.0.3")

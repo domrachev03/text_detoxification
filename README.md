@@ -39,7 +39,7 @@ The structure of the repository should has the following structure:
 
 ```
 text-detoxification
-├── README.md # The top-level README
+├── README.md    # The top-level README
 │
 ├── data 
 │   ├── external # Data from third party sources
