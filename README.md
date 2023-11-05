@@ -1,131 +1,78 @@
-# Practical Machine Learning and Deep Learning - Assignment 1 - Text De-toxification
+# Text Detoxification using finetuned Transformers
+One line of code rewrites the text to non-toxic!
+<p align="center">
+<img width = 600 src="reports/image/preprocessed_wordcloud.png" />
+</p>
 
-## Task description
+## Description
+This repo summarizes my montly mini-research on the text detoxification possibilities using transformers tuning. It containts many notebooks with experiments and final implementations of tools, both in Python and in CLI! One could find all the pretrained models, as well as my modified dataset on my [huggingface profile](https://huggingface.co/domrachev03). 
 
-Text Detoxification Task is a process of transforming the text with toxic style into the text with the same meaning but with neutral style.
+This investigation mostly extends [this research](https://github.com/s-nlp/detox). At least the evaluation and the dataset were taken (and modified) from there, and I highly suggest to familiarize yourself with this repo, if you are interested in topic! 
 
-> Formal definition of text detoxification task can be found in [Text Detoxification using Large Pre-trained Neural Models by Dale et al., page 14](https://arxiv.org/abs/2109.08914)
+This is my first ML-related project, so I'm open to any comments and suggestions!
 
-Your assignment is to create a solution for detoxing text with high level of toxicity. It can be a model or set of models, or any algorithm that would work. 
+## Structure
 
-## Data Labeling
-
-Level of Toxicity is labeled with annotating binary classification by people. Text is passed to annotators for them to put specific label toxic/non-toxic. Then number of positive / toxic assesments are divided by the total number of annotators. This process is performed for every entry in the data, resulting in toxicity dataset.
-
-By this process, we have text with toxicity level. However, for training the model it is best to have sample with high toxicity level and its paraphrazed version with low toxicity level. This gives an opportunity for the model to distiguish from the overall meaning of the text and concentrate on decreasing the level of toxicity (dirung the training process). That is why the data that is provided for you has the pair structure. Dataset structure is described in next section.
-
-## Data Description
-
-The dataset is a subset of the ParaNMT corpus (50M sentence pairs). The filtered ParaNMT-detox corpus (500K sentence pairs) can be downloaded from [here](https://github.com/skoltech-nlp/detox/releases/download/emnlp2021/filtered_paranmt.zip). This is the main dataset for the assignment detoxification task.
-
-The data is given in the `.tsv` format, means columns are separated by `\t` symbol.
-
-| Column | Type | Discription | 
-| ----- | ------- | ---------- |
-| reference | str | First item from the pair | 
-| ref_tox | float | toxicity level of reference text | 
-| translation | str | Second item from the pair - paraphrazed version of the reference|
-| trn_tox | float | toxicity level of translation text |
-| similarity | float | cosine similarity of the texts |
-| lenght_diff | float | relative length difference between texts |
-
-## Evaluation criterias
-
-This assignment is on creating the solution, not on evaluating your algorithm. Major part of the grade will be dedicated to the structure of the solution, your development choices and your explonation on how you approached the problem.
-
-Submission should be a link to GitHub repository. It should be open repository, so that the course team could assess it easily.
-
-The structure of the repository should has the following structure:
-
-```
-text-detoxification
-├── README.md    # The top-level README
-│
-├── data 
-│   ├── external # Data from third party sources
-│   ├── interim  # Intermediate data that has been transformed.
-│   └── raw      # The original, immutable data
-│
-├── models       # Trained and serialized models, final checkpoints
-│
-├── notebooks    #  Jupyter notebooks. Naming convention is a number (for ordering),
-│                   and a short delimited description, e.g.
-│                   "1.0-initial-data-exporation.ipynb"            
-│ 
-├── references   # Data dictionaries, manuals, and all other explanatory materials.
-│
-├── reports      # Generated analysis as HTML, PDF, LaTeX, etc.
-│   └── figures  # Generated graphics and figures to be used in reporting
-│
-├── requirements.txt # The requirements file for reproducing the analysis environment, e.g.
-│                      generated with pip freeze › requirements. txt'
-└── src                 # Source code for use in this assignment
-    │                 
-    ├── data            # Scripts to download or generate data
-    │   └── make_dataset.py
-    │
-    ├── models          # Scripts to train models and then use trained models to make predictions
-    │   ├── predict_model.py
-    │   └── train_model.py
-    │   
-    └── visualization   # Scripts to create exploratory and results oriented visualizations
-        └── visualize.py
+```bash
+.
+├── data
+│   ├── models_test_data        # The results of inference of all models on the test dataset
+├── environment.yml             
+├── notebooks                   # Research notebooks 
+│├── README.md
+├── reports
+│   ├── final_solution.md       # Report, covering details about training best solutions
+│   └── research_summary.md     # Report, covering whole investigation process with lots of details & visuals
+├── requirements.txt
+├── src
+│   ├── data                    # Dataset classes
+│   ├── metrics                 # Metrics used for model's performance evaluation
+│   ├── models                  # Best models implementation, each contains code for running train & validation
+│   │   ├── llama               
+│   │   └── t5_small
+│   └── visualization
+└── TASK_DESCRIPTION.md
 ```
 
+## Models
+> You can find example usage in [final_solution.ipynb](notebooks/4.0-final_solution.ipynb) and skip the rest of the information!
 
-In the top `README.md` file put your name, email and group number. Additionaly, put basic commands how to use your repository. How to transform data, train model and make a predictions.
+### T5-small
+The best among all other models turned out to be T5-small -- 60M parameters almost outperformed all the other models! It combined almost instant inference and great performance, resulting in one of the best options one might choose!
 
-In the `reports` directory create at least two report about your work. In the **first report**, describe your path in solution creation process. List any architectures, ideas, problems and data that leads to your final solution. In the **second report**, describe your final solution.
+<p align="center">
+<img width = 800 src="reports/image/t5_small_inference.gif" />
+</p>
 
-In the `notebooks` directory put at least two notebooks. **First notebook** should contain your initial data exploration and basic ideas behind data preprocessing. **Second notebook** should contain information about final solution training and visualization.
 
-In the `src` directory you should put all the code that is used for the final solution. Provide the script for creation intermediate data in `src/data/`. Provide `train` and `prediction` scripts in `src/models`. Provide visualization script in `src/visualization/`.
+### LLama2-7b 
+This emerged as a fun experiement... but turned out to be quite an alternative. It shows worse performance regarding the metrics, however human evaluation shows that it's predictions are much more fluent and human-like (despite sometimes still toxic). 
 
-## Grading criterias
+Using the prompt: `You are a Twitch moderator that paraphrases sentences to be non-toxic.`, it shows results quite close to the state-of-art solutions, which I find very funny :^)
 
-Full assignment without any problems is said to be the `100%` solution.
+Worth mentioning, that the tuning process was performed via [modal.com](https://modal.com) -- a new startup, providing extremely convinient cloud solutions for ML-related tasks. You can see a one-liner running the image in cloud and generating an answer!
 
-| Criteria | Weight (%) | Comment |
-| ---- | ----- | ----- |
-| Structure and code quality | 25 | Code quality, structure, comments, clean repo, commit history, reproducibility (manual seeding) |
-| Visualization, notebooks quality | 10 | Jupyter notebooks, visualizations |
-| Solution building | 40 |  Solution exploration, references, ideas decription, final report structure |
-| Final score, evaluation  | 15 | Evaluation function, final score, quality of results |
-| Usability, documentation | 10 | Docstrings, arguments parsing, README |
+<p align="center">
+<img width = 800 src="reports/image/llama2_inference.gif" />
+</p>
 
-If **PMLDL Course Team** will have any questions about your assignment or your work fails to show your results you will be called solution defence procedure. 
+Moreover, this model was tuned only a little bit and on a small chunk of the data. Further tuning might show state-of-art results, so either donate me A100 80gb, or go and [try to tune it yourself](https://huggingface.co/domrachev03/llama2_7b_detoxification)!
 
-## Report Examples
-### Solution Bulding Report Example
 
-```
-# Baseline: Dictionary based
-...
-# Hypothesis 1: Custom embeddings
-...
-# Hypothesis 2: More rnn layers
-...
-# Hypothesis 3: Pretrained embeddings
-...
-# Results
-...
-```
+### Worth mentioning
+1. **Reinforcement learned t5-small**
+The idea to launch a t5-small finetuning using library TRL (Transformer Reinforcement Learning) was very promising. Using as a reward the direct evaluation of generated results, and the opportunity to finetune the deployed model using user feedback sounded intriguing... but I failed to finalize it. At least there are some results, but it turned out very hard to find a balance in reward function to make it work. You might familiarize yourself with results [there](notebooks/2.2-t5_RL_tuning_n_inference.ipynb). 
+2. **GPT2**
+Not worth mentioning, actually, GPT2 failed this task completely in my case. I accept that I might treated it in a wrong way, but I spend way too much time debugging this bro to give him any other chance.
 
-### Final Solution Report Example
 
-```
-# Introduction
-...
-# Data analysis
-...
-# Model Specification
-...
-# Training Process
-...
-# Evaluation
-...
-# Results
-...
-```
+## Dependencies
+The main dependencies are:
+1. `modal`
+2. `transformers`, `datasets`, `trl`, `bitsandbytes` and other huggingface libraries
+3. Some models, ex. LLAMA2, would not even start launching without `cuda`
 
-**Good luck! Have fun!**
+And many other dependencies, which are covered in notebooks when required.
+
+## Acknowledgement
+I would like to thanks the team of Practical Machine Learning and Deep Learning course for such a great opportunity to explore the world of Natural Language Processing. Special thanks to Vladimir Ivanov and Maxim Evgragov for tutorship and answering my (usually stupid) questions.

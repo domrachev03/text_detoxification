@@ -97,4 +97,4 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    print(predict([args.input], greb_answer=True, max_length=args.max_length)[0])
+    print(llama2_predict([args.input], greb_answer=True, max_length=args.max_length)[0])

@@ -3,6 +3,12 @@ import torch
 import argparse
 from collections.abc import Iterable
 
+import os
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+import warnings
+warnings.filterwarnings("ignore") 
+
 
 def t5_wrapper(msg):
     ''' Prompt wrapper for the model '''
@@ -46,4 +52,4 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    print(predict([args.input], max_length=args.max_length, device=args.device)[0])
+    print(t5_predict([args.input], max_length=args.max_length, device=args.device)[0])

@@ -49,9 +49,9 @@ The second best model was quite tricky to train. I used a special service called
 
 Another note is that the inference utilizes non-official llama2 weights from the Hugging Face, since I failed to wait upon gaining access from the Meta AI *(21 марта 2022 года российский суд признал компанию Meta экстремистской организацией и запретил ее деятельность на территории страны)*.
 
-The training parameters were the following:
+It was finetuned using the 25k train samples from the described dataset. The training parameters were the following:
 ```python 
-num_epochs = 9
+num_epochs = 5      # Easily could be extended to 9 within the 30$ limit
 batch_size = 16
 lr = 3e-4
 lora_config.r = 8

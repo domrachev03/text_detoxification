@@ -88,7 +88,5 @@ def main(prompt: str, base: str, run_id: str = "", batch: int = 1):
     prompt = wrap_messages([prompt])[0]
     print("=" * 20 + "Generating results" + "=" * 20)
     for output in Model(base, run_id).generate.map([prompt] * batch):
-        stripped_output = output[
-            output.find('[/INST]')+len('[/INST]'): output.find('</s>')
-        ]
+        stripped_output = output[:output.find('</s>')]
         print(stripped_output)
