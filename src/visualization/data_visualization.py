@@ -12,7 +12,7 @@ def plot_histograms(
 ):
     fig, ax = plt.subplots(2, 2, figsize=(2*4, 2*3))
     ax = ax.ravel()
-    
+
     i = 0
     for col in df.columns:
         if not pd.api.types.is_numeric_dtype(df[col]):
@@ -22,7 +22,7 @@ def plot_histograms(
         ax[i].set_title(col.replace('_', ' ').capitalize())
         ax[i].hist(df[col], 20)
         i += 1
-    
+
     plt.tight_layout()
     if save:
         plt.savefig(fname_hist)
@@ -31,37 +31,30 @@ def plot_histograms(
     plt.clf()
 
 
-def plot_distance(
+def plot_dist_n_length(
     df: pd.DataFrame,
     save=False,
-    fname_diff='image/raw_histogram.png'
+    fname='image/length_distribution.png'
 ):
-    plt.xlabel("Value")
-    plt.ylabel("no. of entries")
-    plt.title("Toxicity difference")
-    plt.hist(df['ref_tox']-df["trn_tox"], 20)
-    if save:
-        plt.savefig(fname_diff)
-    else:
-        plt.show()
-    plt.clf()
+    fig, ax = plt.subplots(2, 1, figsize=((2*4, 2*3)))
 
+    ax[0].set_xlabel("Value")
+    ax[0].set_ylabel("no. of entries")
+    ax[0].set_title("Toxicity difference")
+    ax[0].hist(df['ref_tox']-df["trn_tox"], 20)
 
-def plot_length_distributions(
-    df: pd.DataFrame,
-    save=False,
-    fname_diff='image/length_distribution.png'
-):
-    plt.xlabel("Length")
-    plt.ylabel("no. of entries")
-    plt.title("Toxicity difference")
+    ax[1].set_xlabel("Length")
+    ax[1].set_ylabel("no. of entries")
+    ax[1].set_title("Toxicity difference")
     for corpus in ['reference', 'translation']:
         length = np.array([len(s) for s in df[corpus]])
         elements, repears = np.unique(length, return_counts=True)
-        plt.plot(elements[:200], repears[:200], label=corpus)
+        ax[1].plot(elements[:200], repears[:200], label=corpus)
+    plt.tight_layout()
     plt.legend()
+
     if save:
-        plt.savefig(fname_diff)
+        fig.savefig(fname)
     else:
         plt.show()
     plt.clf()
@@ -101,5 +94,30 @@ def visualize_via_wordcloud(
     wc_img.paste(wc_trs_img, (wc_ref_img.width, 0))
     if save:
         wc_img.save('image/' + fname)
-    
+
     return wc_img
+
+
+def visualize_metrics(metrics, metric_names, save=False, fname='image/metrics.png'):
+    fig, ax = plt.subplots(2, 2, figsize=(2*4, 2*3))
+    ax = ax.ravel()
+
+    i = 0
+    model_names = list(metrics.keys())
+    n_models = len(model_names)
+
+    for i, metric_name in enumerate(metric_names):
+        cur_metric_values = []
+        for model_name, model_metrics in metrics.items():
+            cur_metric_values.append(model_metrics[metric_name])
+
+        ax[i].set_ylabel("Values")
+        ax[i].set_title(metric_name.replace('_', ' ').capitalize())
+        ticks = range(n_models)
+        ax[i].set_xticks(ticks, labels=model_names, rotation='horizontal')
+    plt.tight_layout()
+    if save:
+        plt.savefig(fname)
+    else:
+        plt.show()
+    plt.clf()

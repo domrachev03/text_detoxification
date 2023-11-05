@@ -2,7 +2,7 @@ from modal import Image, gpu, method
 
 import subprocess
 import os
-
+from src.models.llama.inference import wrap_messages
 from src.models.llama.common import stub, BASE_MODELS, VOLUME_CONFIG
 
 # The huggingface image to run seq2seq inference
@@ -85,7 +85,10 @@ class Model:
 @stub.local_entrypoint()
 def main(prompt: str, base: str, run_id: str = "", batch: int = 1):
     print(f"Running completion for prompt:\n{prompt}")
-
+    prompt = wrap_messages([prompt])[0]
     print("=" * 20 + "Generating results" + "=" * 20)
     for output in Model(base, run_id).generate.map([prompt] * batch):
-        print(output)
+        stripped_output = output[
+            output.find('[/INST]')+len('[/INST]'): output.find('</s>')
+        ]
+        print(stripped_output)
