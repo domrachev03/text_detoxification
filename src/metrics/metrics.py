@@ -4,7 +4,7 @@ from tqdm.auto import trange
 import torch
 import numpy as np
 
-from transformers import AutoTokenizer, RobertaTokenizer, RobertaForSequenceClassification
+from transformers import RobertaTokenizer, RobertaForSequenceClassification
 
 import evaluate
 
@@ -56,7 +56,7 @@ def get_fluency(preds, soft=False, batch_size=1, device=None):
     model_name = 'cointegrated/roberta-large-cola-krishna2020'
 
     model = RobertaForSequenceClassification.from_pretrained(model_name)
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    tokenizer = RobertaTokenizer.from_pretrained(model_name)
     if device is None:
         device = 'cuda' if torch.cuda.is_available() else device
     device = device
