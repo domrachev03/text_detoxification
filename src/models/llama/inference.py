@@ -30,7 +30,7 @@ def wrap_messages(msgs: Iterable[str]) -> list[str]:
     return wrapped_msgs
 
 
-def predict(
+def llama2_predict(
     requests: Iterable[str],
     greb_answer: bool = False,
     batch_size: int = 1,

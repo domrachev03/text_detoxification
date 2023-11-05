@@ -1,5 +1,6 @@
 import os
 import datasets
+from datasets import Dataset
 import pandas as pd
 import argparse
 from collections.abc import Iterable
@@ -22,7 +23,8 @@ class DetoxDataset:
         split_and_map_dataset: bool = False,
         split_dataset: bool = True,
         save_splitted: bool = True,
-        dataset_sv_fname: str = 'data/raw/filtered.tsv'
+        dataset_sv_fname: str = 'data/raw/filtered.tsv',
+        dataset_arrow_fdir: str = 'data/'
     ):
         '''Default behaviour at construction: download, preprocess and save the dataset locally, without tokenization'''
 
@@ -40,9 +42,9 @@ class DetoxDataset:
             self.load_from_sv(dataset_sv_fname)
             self.preprocess_dataset_sv()
         if split_and_map_dataset:
-            self.preprocess_dataset(save_arrow=save_splitted)
+            self.preprocess_dataset(save_arrow=save_splitted, fdir=dataset_arrow_fdir)
         elif split_dataset:
-            self.split_dataset(save_arrow=save_splitted)
+            self.split_dataset(save_arrow=save_splitted, fdir=dataset_arrow_fdir)
 
     def set_tokenizer(self, tokenizer) -> None:
         self._tokenizer = tokenizer
@@ -55,7 +57,7 @@ class DetoxDataset:
         ''' Downloading and unzipping dataset from the Internet.
             Requires unzip package installed on Linux system '''
 
-        os.system('wget https://github.com/skoltech-nlp/detox/releases/download/emnlp2021/{zip_name}')
+        os.system(f'wget https://github.com/skoltech-nlp/detox/releases/download/emnlp2021/{zip_name}')
         os.system(f'unzip {zip_name} -d {dir}')
         os.system(f'rm {zip_name}')
 
@@ -85,7 +87,7 @@ class DetoxDataset:
 
         return new_df
 
-    def _map_fn(self, examples: datasets.Dataset) -> dataset.Datasets:
+    def _map_fn(self, examples: Dataset) -> Dataset:
         ''' Mapping function, used to tokenize the dataset '''
 
         if self._tokenizer is None:
@@ -118,6 +120,7 @@ class DetoxDataset:
             test_size: float = 0.1,
             batch_size: float = 256,
             save_arrow: bool = False,
+            push_to_hub: bool = False,
             fdir: str = 'data/interim'
     ) -> datasets.Dataset:
         '''Splitting the dataset onto train and test parts.
@@ -128,6 +131,8 @@ class DetoxDataset:
         test_size (float): the fraction of the data utilized as test dataset, ranges [0; 1]
 
         save_arrow (bool): if True, then the dataset would be saved to the file
+
+        push_to_hub (bool): if True, then the dataset would be pushed to the cloud. Ignored if save_arrow=False.
         '''
 
         if df is not None:
@@ -142,7 +147,9 @@ class DetoxDataset:
             split_dict['train'] = split_dict['train'].select(range(n_samples[0]))
             split_dict['test'] = split_dict['test'].select(range(n_samples[1]))
         if save_arrow:
-            split_dict.push_to_hub('domrachev03/toxic_comments_subset')
+            if push_to_hub:
+                split_dict.push_to_hub('domrachev03/toxic_comments_subset')
+
             split_dict["train"].save_to_disk(fdir + '/train_unmapped')
             split_dict["test"].save_to_disk(fdir + '/test_unmapped')
 
@@ -156,6 +163,7 @@ class DetoxDataset:
             test_size=0.1,
             batch_size=256,
             save_arrow=False,
+            push_to_hub: bool = False,
             fdir='data/interim'
     ) -> datasets.Dataset:
         ''' Preprocessing the data, i.e. tokenizing and splitting.
@@ -168,6 +176,7 @@ class DetoxDataset:
             test_size=test_size,
             batch_size=batch_size,
             save_arrow=save_arrow,
+            push_to_hub=push_to_hub,
             fdir=fdir
         )
 

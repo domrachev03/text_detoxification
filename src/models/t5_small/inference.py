@@ -10,7 +10,7 @@ def t5_wrapper(msg):
     return wrapped
 
 
-def predict(
+def t5_predict(
     requests: Iterable[str],
     batch_size: int = 1,
     model_name: str = 'domrachev03/t5_detox',
@@ -33,7 +33,7 @@ def predict(
         with torch.no_grad():
             output = t5_model.generate(tokenized_batch['input_ids'], max_length=max_length)
             result = [t5_tokenizer.decode(out_i, skip_special_tokens=True, temperature=0) for out_i in output]
-    results.extend(result)
+        results.extend(result)
 
     return results
 

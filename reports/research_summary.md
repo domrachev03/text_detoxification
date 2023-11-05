@@ -211,14 +211,14 @@ The metics on the test dataset are the following:
 
 also see Fig. 8
 <figure>
-    <img src="image/t5_rl_learn_history.png"/>
+    <img src="image/metrics.png"/>
     <figcaption>
-        <center> Fig.7 - T5-small learning history with attempt to learn fluent text generation first. As you can see, the attempt was insuccessful </center>
+        <center> Fig.8 - Metrics of the considered models (blue) and some state-of-art models (red) </center>
     </figcaption>
 </figure>
 
 
-The metrics suggest that t5 is outperformed all the models, including Llama2! This is spectacular for the model that is more than 7000 times smaller. However, let's also validate some of the model's answers manually:
+The metrics suggest that t5 is outperformed all the models, including Llama2! This is spectacular for the model that is more than 7000 times smaller. It also showed a very close result compared to baseline models.  However, let's also validate some of the model's answers manually:
 
 | Reference                                                                 | gpt2      | t5                                                                        | t5_rl                                                                   | llama2                                                                   |
 |:--------------------------------------------------------------------------|:----------|:--------------------------------------------------------------------------|:------------------------------------------------------------------------|:-------------------------------------------------------------------------|

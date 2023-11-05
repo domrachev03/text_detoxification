@@ -4,7 +4,8 @@ import warnings
 import datasets
 import torch
 from transformers import AutoModelForSeq2SeqLM, DataCollatorForSeq2Seq, \
-                         Seq2SeqTrainingArguments, Seq2SeqTrainer, AutoTokenizer
+                         Seq2SeqTrainingArguments, Seq2SeqTrainer, AutoTokenizer, \
+                         T5ForConditionalGeneration
 import tqdm
 import argparse
 
@@ -15,7 +16,7 @@ warnings.filterwarnings('ignore')
 torch.manual_seed(42)
 
 
-def train(
+def t5_train(
     dataset: datasets.dataset,
     tokenizer: datasets.tokenizer = None,
     n_epoches: int = 10,
@@ -26,7 +27,7 @@ def train(
     training_args: Seq2SeqTrainingArguments = None,
     save_model: bool = True,
     model_fname: str = 't5_best'
-):
+) -> T5ForConditionalGeneration:
     ''' Function for training T5 (or other similar seq2seq) Neural Networks.
     Parameters:
     dataset (datasets.dataset) -- the training dataset. Expected to be generated via default procedure for
@@ -54,6 +55,9 @@ def train(
     '''
 
     t5_model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+    t5_model.to(device)
+    dataset.to(device)
+
     if tokenizer is None:
         tokenizer = AutoTokenizer.from_pretrained(model_name)
     model_name = model_name.split("/")[-1]
@@ -67,7 +71,7 @@ def train(
             per_device_eval_batch_size=batch_size,
             weight_decay=0.01,
             save_total_limit=10,
-            num_train_epochs=10,
+            num_train_epochs=n_epoches,
             predict_with_generate=True,
             fp16=True,
             report_to='tensorboard',
